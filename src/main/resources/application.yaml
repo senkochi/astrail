@@ -1,3 +1,44 @@
+server:
+  port: ${SERVER_PORT:9000}
+
 spring:
   application:
     name: astrail
+
+  sql:
+    init:
+      mode: always
+
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/astrail}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      initialization-fail-timeout: 0
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:45000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT:5000}
+      leak-detection-threshold: ${DB_LEAK_DETECTION:2000}
+
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+        temp:
+          use_jdbc_metadata_defaults: false
+
+logging:
+  level:
+    org.springframework.security: ${SECURITY_LOG_LEVEL:trace}
+    org.springframework.jdbc: ${JDBC_LOG_LEVEL:debug}
+
+app:
+  security:
+    jwk:
+      keystore-password: ${JWT_KEYSTORE_PASSWORD:astrail}
+      key-alias: ${JWT_KEY_ALIAS:astrail-key}
