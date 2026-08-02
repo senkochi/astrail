@@ -85,15 +85,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(endpointsMatcher)
                 )
-                .with(authorizationServerConfigurer, (authServer) ->
-                        authServer.clientAuthentication(clientAuth ->
-                                clientAuth.errorResponseHandler((request, response, exception) -> {
-                                    // Log lỗi ra console để debug chính xác tại sao fail
-                                    System.out.println("Client Auth Error: " + exception.getMessage());
-                                })
+                .with(authorizationServerConfigurer, (authServer) -> {
+                    authServer
+                        .clientAuthentication(clientAuth ->
+                            clientAuth.errorResponseHandler((request, response, exception) -> {
+                                System.out.println("Client Auth Error: " + exception.getMessage());
+                            })
                         )
-                )
-                .apply(authorizationServerConfigurer); // Áp dụng cấu hình
+                        .oidc(Customizer.withDefaults()); // Bật OIDC gọn gàng ở đây
+                });
 
         authorizationServerConfigurer
                 .oidc(Customizer.withDefaults()); // Bật OpenID Connect
@@ -159,8 +159,8 @@ public class SecurityConfig {
                    .scope(OidcScopes.OPENID)
                    .scope("read")
                    .tokenSettings(TokenSettings.builder()
-                           .accessTokenTimeToLive(Duration.ofHours(2))
-                           .refreshTokenTimeToLive(Duration.ofHours(1))
+                           .accessTokenTimeToLive(Duration.ofHours(1))
+                           .refreshTokenTimeToLive(Duration.ofHours(24))
                            .reuseRefreshTokens(true)
                            .build())
                    .clientSettings(ClientSettings.builder()
