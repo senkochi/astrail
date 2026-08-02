@@ -25,5 +25,34 @@ services:
       timeout: 5s
       retries: 5
 
+  identity-service:
+    build:
+      context: ./src/services/identity-service
+      dockerfile: Dockerfile
+    container_name: astrail-identity-service
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/astrail
+      POSTGRES_USERNAME: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  web-app:
+    build:
+      context: ./src/web-app/astrail
+      dockerfile: Dockerfile
+    container_name: astrail-web-app
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    depends_on:
+      - identity-service
+
 volumes:
   postgres_data:
