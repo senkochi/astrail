@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrail - Celestial Portal</title>
+    <link rel="icon" type="image/png" th:href="@{/assets/logo.png}">
+    <!-- Google Fonts: Cinzel for brand logo, Inter for UI, Fira Code for Terminal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #0F172A; /* Deep Midnight Blue */
+            --secondary: #1E293B;
+            --accent: #D4AF37; /* Warm Gold */
+            --background: #0F172A;
+            --success: #4ADE80;
+            --error: #EF4444;
+            --warning: #FBBC05;
+            --glass-bg: rgba(15, 23, 42, 0.45);
+            --glass-border: rgba(214, 175, 55, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* Celestial space background effects */
+        .cosmic-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .nebula-glow-1 {
+            position: absolute;
+            top: 20%;
+            left: 15%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.04) 0%, rgba(15, 23, 42, 0) 70%);
+            filter: blur(80px);
+        }
+
+        .nebula-glow-2 {
+            position: absolute;
+            bottom: 10%;
+            right: 10%;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            filter: blur(100px);
+        }
+
+        /* Container for the centered landing card */
+        .landing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+            width: 100%;
+            max-width: 960px;
+        }
+
+        /* Brand Logo Area */
+        .brand-logo-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+            user-select: none;
+        }
+
+        .logo-emblem {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.35));
+            animation: floatLogo 6s infinite ease-in-out;
+        }
+
+        .logo-text {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: 6px;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            margin-right: -6px;
+        }
+
+        /* Floating Glassmorphism Landing Card */
+        .glass-card {
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(140%);
+            -webkit-backdrop-filter: blur(25px) saturate(140%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Wave curves inside card borders */
+        .card-wave-tr {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 160px;
+            height: 160px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .card-wave-bl {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 160px;
+            height: 160px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* Grid Layout */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            body {
+                overflow-y: auto;
+            }
+        }
+
+        /* Column Styles */
+        .portal-side {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .sandbox-side {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            padding-bottom: 8px;
+        }
+
+        /* Portal Connection Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            align-self: flex-start;
+            border: 1px solid currentColor;
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .status-connected {
+            color: var(--success);
+            background-color: rgba(74, 222, 128, 0.1);
+            --glow-color: rgba(74, 222, 128, 0.2);
+        }
+
+        .status-restricted {
+            color: var(--warning);
+            background-color: rgba(251, 188, 5, 0.1);
+            --glow-color: rgba(251, 188, 5, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            animation: pulse-dot 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; filter: brightness(1.2); }
+        }
+
+        /* User Profile Info Card */
+        .profile-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .profile-field {
+            margin-bottom: 12px;
+        }
+
+        .profile-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .field-value {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.95);
+            word-break: break-all;
+        }
+
+        .field-value-role {
+            display: inline-block;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* Admin Action Buttons */
+        .admin-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .admin-controls-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .btn-dev {
+            width: 100%;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.8);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-dev:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-dev-grant {
+            border-color: rgba(74, 222, 128, 0.3);
+            color: var(--success);
+        }
+
+        .btn-dev-grant:hover {
+            background: rgba(74, 222, 128, 0.1);
+            border-color: var(--success);
+            color: #FFFFFF;
+        }
+
+        .btn-dev-revoke {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--error);
+        }
+
+        .btn-dev-revoke:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--error);
+            color: #FFFFFF;
+        }
+
+        /* Action Buttons (Submit/CTA) */
+        .btn-portal {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 9999px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            display: block;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .btn-portal-login {
+            background: linear-gradient(135deg, #F5D061 0%, #D4AF37 50%, #B38F24 100%);
+            color: var(--primary);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+        }
+
+        .btn-portal-login:hover {
+            box-shadow: 0 6px 25px rgba(212, 175, 55, 0.55);
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .btn-portal-logout {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-portal-logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--error);
+            color: #FFFFFF;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Interactive Sandbox Buttons */
+        .sandbox-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 576px) {
+            .sandbox-buttons {
+                flex-direction: column;
+            }
+        }
+
+        .btn-test {
+            flex: 1;
+            padding: 12px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(15, 23, 42, 0.6);
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+        }
+
+        .btn-test:hover {
+            border-color: var(--accent);
+            color: #FFFFFF;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+
+        .btn-test:active {
+            transform: scale(0.98);
+        }
+
+        /* Monospace Nebula Terminal Console */
+        .terminal-console {
+            background: #0B0F19;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 250px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .terminal-header {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .terminal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background-color: #EF4444; }
+        .dot-yellow { background-color: #FBBC05; }
+        .dot-green { background-color: #4ADE80; }
+
+        .terminal-title {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+        }
+
+        .terminal-body {
+            padding: 16px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #A5F3FC; /* Light Cyan */
+            overflow-y: auto;
+            flex: 1;
+            text-align: left;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Notifications & Alerts */
+        .alert {
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 22px;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .alert-success {
+            background-color: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--success);
+            color: rgba(74, 222, 128, 0.9);
+        }
+
+        .close-alert {
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            opacity: 0.7;
+            padding: 0 4px;
+        }
+
+        .close-alert:hover {
+            opacity: 1;
+        }
+
+        /* Celestial backgrounds & animations */
+        .celestial-star {
+            position: absolute;
+            fill: #FFFFFF;
+            opacity: 0.15;
+            animation: twinkle 4s infinite ease-in-out;
+        }
+
+        .fox-constellation {
+            position: absolute;
+            right: 5%;
+            top: 15%;
+            width: 320px;
+            height: 400px;
+            pointer-events: none;
+            opacity: 0.25;
+            z-index: 1;
+            filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.15));
+            animation: slowFloating 15s infinite ease-in-out;
+        }
+
+        .sparkle-bottom-right {
+            position: absolute;
+            bottom: 5%;
+            right: 5%;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            opacity: 0.4;
+            z-index: 1;
+            filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
+        }
+
+        /* Animation Keyframes */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.85; }
+        }
+
+        @keyframes floatLogo {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes slowFloating {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(1.5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .fox-constellation {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Space Background Gradients -->
+    <div class="cosmic-bg">
+        <div class="nebula-glow-1"></div>
+        <div class="nebula-glow-2"></div>
+
+        <!-- Blinking stars -->
+        <svg class="celestial-star" style="top:12%; left:8%; animation-delay:0s;" width="8" height="8" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" /></svg>
+        <svg class="celestial-star" style="top:45%; left:5%; animation-delay:1.5s;" width="12" height="12" viewBox="0 0 10 10"><circle cx="5" cy="5" r="1.5" /></svg>
+        <svg class="celestial-star" style="top:85%; left:12%; animation-delay:3s;" width="6" height="6" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2.5" /></svg>
+        <svg class="celestial-star" style="top:75%; left:88%; animation-delay:0.5s;" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" /></svg>
+        <svg class="celestial-star" style="top:22%; left:92%; animation-delay:2s;" width="8" height="8" viewBox="0 0 10 10"><circle cx="5" cy="5" r="1.5" /></svg>
+        <svg class="celestial-star" style="top:92%; left:45%; animation-delay:1s;" width="12" height="12" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" /></svg>
+    </div>
+
+    <!-- Fox Constellation Graphic (on the right) -->
+    <svg class="fox-constellation" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#D4AF37" stroke-width="0.75" opacity="0.4" stroke-dasharray="3 3">
+            <line x1="200" y1="80" x2="230" y2="40" /><line x1="230" y1="40" x2="250" y2="70" /><line x1="250" y1="70" x2="200" y2="80" />
+            <line x1="200" y1="80" x2="170" y2="40" /><line x1="170" y1="40" x2="150" y2="70" /><line x1="150" y1="70" x2="200" y2="80" />
+            <line x1="200" y1="80" x2="200" y2="130" /><line x1="200" y1="130" x2="260" y2="145" /><line x1="260" y1="145" x2="200" y2="170" />
+            <line x1="200" y1="170" x2="140" y2="145" /><line x1="140" y1="145" x2="200" y2="130" />
+            <line x1="140" y1="145" x2="110" y2="240" /><line x1="200" y1="170" x2="200" y2="250" /><line x1="260" y1="145" x2="290" y2="240" />
+            <line x1="110" y1="240" x2="90" y2="340" /><line x1="290" y1="240" x2="310" y2="340" />
+            <line x1="90" y1="340" x2="140" y2="410" /><line x1="310" y1="340" x2="260" y2="410" /><line x1="140" y1="410" x2="200" y2="250" /><line x1="260" y1="410" x2="200" y2="250" />
+            <line x1="140" y1="410" x2="80" y2="440" /><line x1="80" y1="440" x2="50" y2="340" /><line x1="50" y1="340" x2="100" y2="280" />
+            <line x1="260" y1="410" x2="320" y2="440" /><line x1="320" y1="440" x2="350" y2="340" /><line x1="350" y1="340" x2="300" y2="280" />
+        </g>
+        <g fill="#D4AF37">
+            <circle cx="200" cy="80" r="3" /><circle cx="230" cy="40" r="2.5" /><circle cx="250" cy="70" r="2.5" /><circle cx="170" cy="40" r="2.5" /><circle cx="150" cy="70" r="2.5" />
+            <circle cx="200" cy="130" r="3" /><circle cx="260" cy="145" r="4" filter="url(#glow)" /><circle cx="200" cy="170" r="3" /><circle cx="140" cy="145" r="4" filter="url(#glow)" />
+            <circle cx="110" cy="240" r="3" /><circle cx="200" cy="250" r="3" /><circle cx="290" cy="240" r="3" />
+            <circle cx="90" cy="340" r="2.5" /><circle cx="310" cy="340" r="2.5" />
+            <circle cx="140" cy="410" r="3" /><circle cx="260" cy="410" r="3" />
+            <circle cx="80" cy="440" r="3" /><circle cx="50" cy="340" r="3" /><circle cx="100" cy="280" r="2" />
+            <circle cx="320" cy="440" r="3" /><circle cx="350" cy="340" r="3" /><circle cx="300" cy="280" r="2" />
+        </g>
+        <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Star Sparkle Graphic (bottom right) -->
+    <svg class="sparkle-bottom-right" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 30 0 Q 30 30 0 30 Q 30 30 30 60 Q 30 30 60 30 Q 30 30 30 0" fill="url(#goldGradient)" />
+        <defs>
+            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FFF3C4" /><stop offset="50%" stop-color="#D4AF37" /><stop offset="100%" stop-color="#9E7815" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="landing-container">
+
+        <!-- Brand Logo Area -->
+        <div class="brand-logo-area">
+            <img th:src="@{/assets/logo.png}" class="logo-emblem" alt="ASTRAIL Logo" />
+            <h1 class="logo-text">ASTRAIL</h1>
+        </div>
+
+        <!-- Logout Success Message if ?logout -->
+        <div class="alert alert-success" id="logoutAlert" th:if="${param.logout}">
+            <span>Your session has successfully dissolved back into the cosmic void.</span>
+            <span class="close-alert" onclick="document.getElementById('logoutAlert').style.display='none'">&times;</span>
+        </div>
+
+        <!-- Glassmorphism Form Card -->
+        <div class="glass-card">
+
+            <!-- Wavy background curves -->
+            <svg class="card-wave-tr" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 0 8 Q 65 10 82 45 Q 95 70 92 100" stroke="#D4AF37" stroke-width="0.75" fill="none" />
+                <path d="M 20 0 Q 75 10 88 35 Q 100 55 100 80" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="2 2" fill="none" />
+            </svg>
+            <svg class="card-wave-bl" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 100 92 Q 35 90 18 55 Q 5 30 8 0" stroke="#D4AF37" stroke-width="0.75" fill="none" />
+                <path d="M 80 100 Q 25 90 12 65 Q 0 45 0 20" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="2 2" fill="none" />
+            </svg>
+
+            <div class="card-grid">
+
+                <!-- Left Column: Portal Status -->
+                <div class="portal-side">
+                    <h2 class="section-title">Portal Gateway</h2>
+
+                    <!-- Authenticated View -->
+                    <div th:if="${isAuthenticated}">
+                        <div class="status-badge status-connected">
+                            <span class="status-dot"></span>
+                            <span>Portal Connected</span>
+                        </div>
+
+                        <div class="profile-card">
+                            <div class="profile-field">
+                                <div class="field-label">Celestial Subject</div>
+                                <div class="field-value" th:text="${username}">username@email.com</div>
+                            </div>
+                            <div class="profile-field">
+                                <div class="field-label">Subject Signature (UUID)</div>
+                                <div class="field-value" style="font-family: monospace; font-size:12px;" th:text="${userId}">3fa85f64-5717-4562-b3fc-2c963f66afa6</div>
+                            </div>
+                            <div class="profile-field">
+                                <div class="field-label">Assigned Star Systems (Roles)</div>
+                                <div>
+                                    <span class="field-value-role" th:text="${roles}">ROLE_USER</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Developer Admin Role Toggles -->
+                        <div class="admin-controls">
+                            <div class="admin-controls-title">Role Configuration (Dev Mode)</div>
+                            <button class="btn-dev btn-dev-grant" onclick="callApi('/api/test/grant-admin', 'Dev Command: Elevating authority to Admin...')">
+                                ✦ Grant ADMIN Role
+                            </button>
+                            <button class="btn-dev btn-dev-revoke" onclick="callApi('/api/test/revoke-admin', 'Dev Command: Revoking Admin authority...')">
+                                ✧ Revoke ADMIN Role
+                            </button>
+                        </div>
+
+                        <!-- Logout Form -->
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit" class="btn-portal btn-portal-logout">Sever Connection</button>
+                        </form>
+                    </div>
+
+                    <!-- Unauthenticated View -->
+                    <div th:unless="${isAuthenticated}">
+                        <div class="status-badge status-restricted">
+                            <span class="status-dot"></span>
+                            <span>Portal Locked</span>
+                        </div>
+
+                        <div class="profile-card" style="border-color: rgba(214, 175, 55, 0.15);">
+                            <p style="font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.7); text-align: left;">
+                                Greetings, traveler. The inner starry domains are currently shielded. You must authorize your credentials to query secured nodes.
+                            </p>
+                        </div>
+
+                        <a href="/login" class="btn-portal btn-portal-login">Enter the Starry Sky</a>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sandbox Terminal -->
+                <div class="sandbox-side">
+                    <h2 class="section-title">Authorization Sandbox</h2>
+                    <p style="font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-bottom: 20px; line-height: 1.5;">
+                        Interact with the system matchers below. The responses will print to the active celestial console log in real-time.
+                    </p>
+
+                    <div class="sandbox-buttons">
+                        <button class="btn-test" onclick="callApi('/api/test/public', 'Querying Public Beacon [permitAll]...')">
+                            Public Orbit
+                        </button>
+                        <button class="btn-test" onclick="callApi('/api/test/user', 'Querying User Sector [hasRole(\'USER\')]...')">
+                            User Station
+                        </button>
+                        <button class="btn-test" onclick="callApi('/api/test/admin', 'Querying Admin Sector [hasRole(\'ADMIN\')]...')">
+                            Admin Sector
+                        </button>
+                    </div>
+
+                    <div class="terminal-console">
+                        <div class="terminal-header">
+                            <div class="terminal-dots">
+                                <div class="terminal-dot dot-red"></div>
+                                <div class="terminal-dot dot-yellow"></div>
+                                <div class="terminal-dot dot-green"></div>
+                            </div>
+                            <div class="terminal-title">astrail-term-v1.0.sh</div>
+                            <div></div>
+                        </div>
+                        <div class="terminal-body" id="consoleOutput">Welcome to Astrail Auth Console.
+Click any sector button above to initiate telemetry...</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        function callApi(url, initMessage) {
+            const outputElement = document.getElementById('consoleOutput');
+            outputElement.innerHTML = `${initMessage}\n\n`;
+            
+            const startTime = performance.now();
+            
+            fetch(url)
+                .then(async response => {
+                    const duration = (performance.now() - startTime).toFixed(1);
+                    const statusText = response.status + ' ' + response.statusText;
+                    
+                    let data;
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        data = await response.text();
+                    }
+                    
+                    let output = `[Request Telemetry]\n`;
+                    output += `Target URL : ${url}\n`;
+                    output += `Status Code: ${statusText}\n`;
+                    output += `Duration   : ${duration} ms\n\n`;
+                    output += `[Payload Response]\n`;
+                    
+                    if (typeof data === 'object') {
+                        output += JSON.stringify(data, null, 4);
+                    } else {
+                        output += data;
+                    }
+                    
+                    outputElement.innerHTML = output;
+                })
+                .catch(error => {
+                    const duration = (performance.now() - startTime).toFixed(1);
+                    let output = `[Telemetry Failed]\n`;
+                    output += `Target URL : ${url}\n`;
+                    output += `Duration   : ${duration} ms\n\n`;
+                    output += `[Error Details]\n`;
+                    output += error.toString();
+                    
+                    outputElement.innerHTML = output;
+                });
+        }
+    </script>
+</body>
+</html>

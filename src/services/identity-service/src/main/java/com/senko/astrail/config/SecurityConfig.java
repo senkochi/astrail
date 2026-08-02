@@ -114,19 +114,28 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws  Exception{
-        http
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http   
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/", "/api/auth/register", "/login", "/css/**", "/js/**", "/assets/**").permitAll() // Allow access to landing, login page & static files
+                        .requestMatchers("/api/test/public").permitAll()
+                        .requestMatchers("/api/test/user").hasRole("USER")
+                        .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.disable())
-                // Form login handles the redirect to the login page from the
-                // authorization server filter chain
-                .formLogin(Customizer.withDefaults());
+                .csrf(csrf -> csrf.disable()) // Note: If you enable CSRF later, you must include a CSRF token in your custom form.
+                .formLogin(form -> form
+                        .loginPage("/login") // Point to your custom login endpoint
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/?logout")
+                        .permitAll()
+                );
 
         return http.build();
     }
+
 
     @Bean
     public JdbcUserDetailsManager userDetailsManager(DataSource dataSource){
