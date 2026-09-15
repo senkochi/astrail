@@ -1,7 +1,7 @@
-target/
-.git/
+target
+.git
 .gitignore
 .dockerignore
-*.iml
-.idea/
-.vscode/
+.idea
+*.log
+.mvn/wrapper/maven-wrapper.jar

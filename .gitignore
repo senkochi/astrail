@@ -34,4 +34,5 @@ build/
 
 .env
 
-.agents
+src/web-app/astrail/.agents/
+src/services/.agents/

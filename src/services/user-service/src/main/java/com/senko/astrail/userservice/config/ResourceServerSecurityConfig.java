@@ -27,9 +27,8 @@ public class ResourceServerSecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/v1/users/public", "/actuator/**").permitAll()
+                .requestMatchers("/actuator/**", "/api/v1/users/public").permitAll()
                 .requestMatchers("/api/v1/users/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/v1/users/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -46,18 +45,22 @@ public class ResourceServerSecurityConfig {
         return converter;
     }
 
-    public static class CustomJwtGrantedAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+    private static class CustomJwtGrantedAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            List<String> roles = jwt.getClaimAsStringList("roles");
-            if (roles == null || roles.isEmpty()) {
-                return Collections.emptyList();
+            Object rolesObj = jwt.getClaim("roles");
+            if (rolesObj instanceof List<?> list) {
+                return list.stream()
+                        .map(Object::toString)
+                        .map(role -> {
+                            if (!role.startsWith("ROLE_") && !role.startsWith("SCOPE_")) {
+                                return new SimpleGrantedAuthority("ROLE_" + role);
+                            }
+                            return new SimpleGrantedAuthority(role);
+                        })
+                        .collect(Collectors.toList());
             }
-
-            return roles.stream()
-                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+            return Collections.emptyList();
         }
     }
 }

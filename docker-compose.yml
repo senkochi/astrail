@@ -43,6 +43,41 @@ services:
       POSTGRES_USERNAME: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
+  user-service:
+    build:
+      context: ./src/services/user-service
+      dockerfile: Dockerfile
+    container_name: astrail-user-service
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    depends_on:
+      - identity-service
+    environment:
+      AUTH_SERVER_JWK_URI: http://identity-service:9000/api/auth/jwks
+      AUTH_SERVER_ISSUER_URI: http://localhost:9000
+
+  api-gateway:
+    build:
+      context: ./src/services/api-gateway
+      dockerfile: Dockerfile
+    container_name: astrail-api-gateway
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - identity-service
+      - user-service
+    environment:
+      AUTH_SERVER_AUTH_URI: http://localhost:9000/api/auth/authorize
+      AUTH_SERVER_TOKEN_URI: http://identity-service:9000/api/auth/token
+      AUTH_SERVER_JWK_URI: http://identity-service:9000/api/auth/jwks
+      AUTH_SERVER_USERINFO_URI: http://identity-service:9000/api/auth/userinfo
+      USER_SERVICE_URL: http://user-service:8081
+      IDENTITY_SERVICE_URL: http://identity-service:9000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+
+
   web-app:
     build:
       context: ./src/web-app/astrail
@@ -52,7 +87,7 @@ services:
       - "5173:80"
     restart: unless-stopped
     depends_on:
-      - identity-service
+      - api-gateway
 
 volumes:
   postgres_data:

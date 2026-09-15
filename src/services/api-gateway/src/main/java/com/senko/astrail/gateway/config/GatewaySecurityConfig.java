@@ -8,6 +8,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 
+
 @Configuration
 @EnableWebFluxSecurity
 @EnableConfigurationProperties(AppProperties.class)
@@ -40,6 +41,8 @@ public class GatewaySecurityConfig {
                 )
             );
 
+
         return http.build();
     }
 }
+

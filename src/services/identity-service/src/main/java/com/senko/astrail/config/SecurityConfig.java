@@ -92,7 +92,7 @@ public class SecurityConfig {
                                 System.out.println("Client Auth Error: " + exception.getMessage());
                             })
                         )
-                        .oidc(Customizer.withDefaults());
+                        .oidc(Customizer.withDefaults()); // Bật OIDC gọn gàng ở đây
                 });
 
 
@@ -107,7 +107,6 @@ public class SecurityConfig {
                         .jwt(Customizer.withDefaults()));
 
         return http.build();
-
     }
 
     @Bean
@@ -115,15 +114,15 @@ public class SecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http   
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/", "/api/auth/register", "/login", "/css/**", "/js/**", "/assets/**").permitAll() // Allow access to landing, login page & static files
+                        .requestMatchers("/", "/api/auth/register", "/login", "/css/**", "/js/**", "/assets/**", "/favicon.ico", "/.well-known/**", "/error").permitAll()
                         .requestMatchers("/api/test/public").permitAll()
                         .requestMatchers("/api/test/user").hasRole("USER")
                         .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.disable()) // Note: If you enable CSRF later, you must include a CSRF token in your custom form.
+                .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form
-                        .loginPage("/login") // Point to your custom login endpoint
+                        .loginPage("/login")
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -145,29 +144,33 @@ public class SecurityConfig {
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate){
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
-       if(repository.findByClientId("my-client-gateway") == null){
-           RegisteredClient testClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                   .clientId("my-client-gateway")
-                   .clientSecret("{noop}secret")
-                   .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                   .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                   .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                   .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                   .redirectUri("http://127.0.0.1:8080/login/oauth2/code/gateway")
-                   .scope(OidcScopes.OPENID)
-                   .scope("read")
-                   .tokenSettings(TokenSettings.builder()
-                           .accessTokenTimeToLive(Duration.ofHours(2))
-                           .refreshTokenTimeToLive(Duration.ofHours(1))
-                           .reuseRefreshTokens(true)
-                           .build())
-                   .clientSettings(ClientSettings.builder()
-                           .requireProofKey(false)
-                           .requireAuthorizationConsent(true)
-                           .build())
-                   .build();
-           repository.save(testClient);
-       }
+        RegisteredClient existing = repository.findByClientId("my-client-gateway");
+        String clientIdId = existing != null ? existing.getId() : UUID.randomUUID().toString();
+
+        RegisteredClient testClient = RegisteredClient.withId(clientIdId)
+                .clientId("my-client-gateway")
+                .clientSecret("{noop}secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .redirectUri("http://localhost:8080/login/oauth2/code/gateway")
+                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/gateway")
+                .scope(OidcScopes.OPENID)
+                .scope(OidcScopes.PROFILE)
+                .scope("read")
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(1))
+                        .refreshTokenTimeToLive(Duration.ofHours(24))
+                        .reuseRefreshTokens(true)
+                        .build())
+                .clientSettings(ClientSettings.builder()
+                        .requireProofKey(false)
+                        .requireAuthorizationConsent(false)
+                        .build())
+                .build();
+        repository.save(testClient);
         return repository;
     }
 
@@ -243,7 +246,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(JdbcTemplate jdbcTemplate) {
         return context -> {
             Authentication principal = context.getPrincipal();
 
@@ -260,8 +263,14 @@ public class SecurityConfig {
                     context.getClaims().claim("auth_type", "USER");
                 }
 
-                if(principal.getPrincipal() instanceof CustomUserDetails userDetails){
-                    context.getClaims().claim("userId", userDetails.getId().toString());
+                if (principal.getName() != null) {
+                    try {
+                        UUID userId = jdbcTemplate.queryForObject(
+                                "SELECT id FROM users WHERE username = ?", UUID.class, principal.getName());
+                        if (userId != null) {
+                            context.getClaims().claim("userId", userId.toString());
+                        }
+                    } catch (Exception ignored) {}
                 }
 
                 Set<String> authorities = principal.getAuthorities().stream()
@@ -275,6 +284,7 @@ public class SecurityConfig {
             }
         };
     }
+
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings(){
