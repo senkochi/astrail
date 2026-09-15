@@ -1,0 +1,18 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: user-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_SERVER_JWK_URI:http://localhost:9000/api/auth/jwks}
+          issuer-uri: ${AUTH_SERVER_ISSUER_URI:http://localhost:9000}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.senko.astrail.userservice: DEBUG

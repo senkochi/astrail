@@ -1,12 +1,30 @@
 import { useState, useEffect } from 'react'
+import {
+  IconPlayerPlay,
+  IconChartBar,
+  IconCpu,
+  IconShieldLock,
+  IconLayoutDashboard,
+  IconTerminal2,
+  IconSettings,
+  IconActivity,
+  IconUsers
+} from '@tabler/icons-react'
 import './App.css'
+import { OAUTH2_CONFIG, getOAuth2AuthorizeUrl, getLogoutUrl } from './config/auth'
+
 
 function App() {
   const [mode, setMode] = useState<'mock' | 'live'>('mock')
   const [mockState, setMockState] = useState<'guest' | 'user' | 'admin'>('guest')
   const [consoleLogs, setConsoleLogs] = useState<string>(
-    'Welcome to Astrail Auth Console.\nClick any sector button above to initiate telemetry...'
+    'Welcome to Astrail Quiz Battle Gateway.\nChoose a matchmaker sector below to initiate matchmaker telemetry...'
   )
+
+  // 3D Tilt interactive effect state
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({
+    transform: 'rotateX(2deg) rotateY(-1deg)'
+  })
 
   // For live mode: check if user is authenticated by querying the backend.
   const [liveUser, setLiveUser] = useState<{
@@ -19,8 +37,8 @@ function App() {
   // Automatically fetch profile status in Live mode
   useEffect(() => {
     if (mode === 'live') {
-      setConsoleLogs('Initializing Live connection to Astrail API (http://localhost:9000)...')
-      fetch('http://localhost:9000/api/test/user', {
+      setConsoleLogs(`Initializing Live connection to Astrail API (${OAUTH2_CONFIG.apiBaseUrl})...`)
+      fetch(`${OAUTH2_CONFIG.apiBaseUrl}/api/test/user`, {
         headers: {
           'Accept': 'application/json'
         }
@@ -38,8 +56,8 @@ function App() {
               `[Live Connection Status]\n` +
               `Connection Established successfully!\n` +
               `Status      : 200 OK\n` +
-              `Authenticated User: ${data.username}\n` +
-              `Assigned Roles    : ${(data.roles || []).join(', ')}`
+              `Challenger Name : ${data.username}\n` +
+              `Celestial Roles : ${(data.roles || []).join(', ')}`
             )
           } else {
             setLiveUser({
@@ -65,7 +83,7 @@ function App() {
           })
           setConsoleLogs(
             `[Live Connection Failed]\n` +
-            `Could not resolve Astrail Gateway server on http://localhost:9000.\n` +
+            `Could not resolve Astrail Gateway server on ${OAUTH2_CONFIG.apiBaseUrl}.\n` +
             `Make sure your Spring Boot backend application is running.\n\n` +
             `Error: ${err.message}`
           )
@@ -73,7 +91,7 @@ function App() {
     } else {
       // Mock mode reset
       setLiveUser(null)
-      setConsoleLogs('Switched to Simulation Sandbox.\nClick any button above to initiate local telemetry...')
+      setConsoleLogs('Switched to Simulation Sandbox.\nChoose a matchmaker sector below to initiate matchmaker telemetry...')
     }
   }, [mode])
 
@@ -92,7 +110,7 @@ function App() {
         if (endpoint === '/api/test/public') {
           payload = {
             status: 'Success',
-            message: 'This is a public celestial beacon. Anyone can read this! (Simulated)',
+            message: 'Entered the Public Orbit lobby. Ready for pairing! (Simulated)',
             endpoint: '/api/test/public',
             timestamp: Date.now()
           }
@@ -101,13 +119,13 @@ function App() {
             status = '401 Unauthorized'
             payload = {
               status: 'Error',
-              message: 'Full authentication is required to access this resource.',
+              message: 'Authentication required. Please enter the Challenger Gate.',
               path: '/api/test/user'
             }
           } else {
             payload = {
               status: 'Success',
-              message: 'Welcome to the Standard User Orbit. (Simulated)',
+              message: 'Welcome to the Challenger Orbit. Matchmaking queue active! (Simulated)',
               endpoint: '/api/test/user',
               username: mockState === 'admin' ? 'admin@astrail.com' : 'user@astrail.com',
               roles: mockState === 'admin' ? ['ROLE_USER', 'ROLE_ADMIN'] : ['ROLE_USER'],
@@ -118,7 +136,7 @@ function App() {
           if (mockState === 'admin') {
             payload = {
               status: 'Success',
-              message: 'Access granted to the Forbidden Administrative Nebula! (Simulated)',
+              message: 'Fox Spirit Shrine gate opened! Mystic score multipliers online. (Simulated)',
               endpoint: '/api/test/admin',
               username: 'admin@astrail.com',
               roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -128,53 +146,53 @@ function App() {
             status = '403 Forbidden'
             payload = {
               status: 'Error',
-              message: 'Access Denied: Subject signature does not have administrative clearance.',
+              message: 'Access Denied: Subject signature does not have Fox Spirit clearance.',
               path: '/api/test/admin'
             }
           } else {
             status = '401 Unauthorized'
             payload = {
               status: 'Error',
-              message: 'Full authentication is required to access this resource.',
+              message: 'Authentication required. Access to the Fox Spirit Shrine is forbidden.',
               path: '/api/test/admin'
             }
           }
         } else if (endpoint === '/api/test/grant-admin') {
           if (mockState === 'guest') {
             status = '400 Bad Request'
-            payload = { status: 'Error', message: 'You must be logged in to grant roles.' }
+            payload = { status: 'Error', message: 'You must log in to elevate challenger rank.' }
           } else {
             setMockState('admin')
             payload = {
               status: 'Success',
-              message: 'ROLE_ADMIN granted programmatically! Mock Session elevated.'
+              message: 'Fox Spirit blessings granted! Challenger rank elevated to ADMIN.'
             }
           }
         } else if (endpoint === '/api/test/revoke-admin') {
           if (mockState === 'guest') {
             status = '400 Bad Request'
-            payload = { status: 'Error', message: 'You must be logged in to revoke roles.' }
+            payload = { status: 'Error', message: 'You must log in to adjust challenger rank.' }
           } else {
             setMockState('user')
             payload = {
               status: 'Success',
-              message: 'ROLE_ADMIN revoked programmatically! Mock Session returned to normal user.'
+              message: 'Fox Spirit blessings returned. Challenger rank returned to USER.'
             }
           }
         }
 
-        let output = `[Simulated Telemetry]\n`
-        output += `Target URL : ${endpoint}\n`
-        output += `Status Code: ${status}\n`
-        output += `Duration   : ${duration} ms\n\n`
-        output += `[Payload Response]\n`
+        let output = `[Simulated Matchmaker Telemetry]\n`
+        output += `Target Gateway : ${endpoint}\n`
+        output += `Status Code    : ${status}\n`
+        output += `Duration       : ${duration} ms\n\n`
+        output += `[Lobby Payload Response]\n`
         output += JSON.stringify(payload, null, 4)
 
         setConsoleLogs(output)
       }, 400)
     } else {
       // Live API call flow
-      const url = `http://localhost:9000${endpoint}`
+      const url = `${OAUTH2_CONFIG.apiBaseUrl}${endpoint}`
       fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -219,6 +237,28 @@ function App() {
     }
   }
 
+  // Interactive 3D mouse tilt handler
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget
+    const box = card.getBoundingClientRect()
+    const x = e.clientX - box.left - box.width / 2
+    const y = e.clientY - box.top - box.height / 2
+    const rotateX = -(y / (box.height / 2)) * 4 // Max 4 degrees
+    const rotateY = (x / (box.width / 2)) * 4 // Max 4 degrees
+
+    setTiltStyle({
+      transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+      transition: 'transform 0.1s ease-out'
+    })
+  }
+
+  const handleMouseLeave = () => {
+    setTiltStyle({
+      transform: 'rotateX(2deg) rotateY(-1deg)',
+      transition: 'transform 0.5s ease-out'
+    })
+  }
+
   // Determine current display info
   const isAuthenticated = mode === 'mock' ? mockState !== 'guest' : !!(liveUser && liveUser.authenticated)
   const username = mode === 'mock' ? (mockState === 'admin' ? 'admin@astrail.com' : 'user@astrail.com') : (liveUser?.username || '')
@@ -226,13 +266,13 @@ function App() {
   const roles = mode === 'mock' ? (mockState === 'admin' ? 'ROLE_USER, ROLE_ADMIN' : 'ROLE_USER') : (liveUser?.roles || '')
 
   return (
-    <>
+    <div className="app-wrapper">
       {/* Background celestial styling */}
       <div className="cosmic-bg">
         <div className="nebula-glow-1"></div>
         <div className="nebula-glow-2"></div>
 
-        {/* Stars layer */}
+        {/* Twinkling stars */}
         <svg className="celestial-star" style={{ top: '12%', left: '8%', animationDelay: '0s' }} width="8" height="8" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2" /></svg>
         <svg className="celestial-star" style={{ top: '45%', left: '5%', animationDelay: '1.5s' }} width="12" height="12" viewBox="0 0 10 10"><circle cx="5" cy="5" r="1.5" /></svg>
         <svg className="celestial-star" style={{ top: '85%', left: '12%', animationDelay: '3s' }} width="6" height="6" viewBox="0 0 10 10"><circle cx="5" cy="5" r="2.5" /></svg>
@@ -281,204 +321,377 @@ function App() {
         </defs>
       </svg>
 
-      <div className="landing-container">
-        
-        {/* Brand Area */}
-        <div className="brand-logo-area">
-          <img src="/logo.png" className="logo-emblem" alt="ASTRAIL Logo" />
-          <h1 className="logo-text">ASTRAIL</h1>
+      {/* [01. NAVBAR SECTION] */}
+      <header className="navbar">
+        <div className="navbar-container">
+          <a href="#" className="navbar-left">
+            <img src="/logo.png" className="navbar-logo" alt="ASTRAIL Logo" />
+            <span className="navbar-brand">ASTRAIL</span>
+          </a>
+          <nav className="navbar-center">
+            <a href="#features" className="nav-link">Features</a>
+            <a href="#solutions" className="nav-link">Solutions</a>
+            <a href="#docs" className="nav-link">Documentation</a>
+            <a href="#pricing" className="nav-link">Pricing</a>
+          </nav>
+          <div className="navbar-right">
+            <button className="btn-signin" onClick={() => window.location.href = getOAuth2AuthorizeUrl()}>Sign In</button>
+            <button className="btn-getstarted" onClick={() => window.location.href = getOAuth2AuthorizeUrl()}>Get Started</button>
+          </div>
         </div>
+      </header>
 
-        {/* Server Mode Switcher */}
-        <div className="mode-switcher">
-          <button 
-            className={`btn-mode ${mode === 'mock' ? 'active' : ''}`}
-            onClick={() => setMode('mock')}
+      {/* [02. HERO SECTION] */}
+      <main>
+        <section className="hero-section">
+          <div className="hero-badge">
+            <span className="badge-new">NEW</span>
+            <span className="badge-text">Astrail v2.0 is live &rarr;</span>
+          </div>
+          <h1 className="hero-headline">
+            Navigate the Starry Trails of Fox Spirit Quiz Battles.
+          </h1>
+          <p className="hero-subheadline">
+            Challenge players across the galaxy in real-time quiz duels, harness the wisdom of the fox spirits, and climb the celestial leaderboards.
+          </p>
+          <div className="hero-ctas">
+            <button className="btn-primary-cta">Start Free Trial</button>
+            <button className="btn-secondary-cta">
+              <IconPlayerPlay size={16} fill="currentColor" />
+              <span>View Live Demo</span>
+            </button>
+          </div>
+        </section>
+
+        {/* [03. FEATURE HIGHLIGHTS] */}
+        <section id="features" className="features-section">
+          <h2 className="section-title">Engineered for Cosmic Scale</h2>
+          <div className="features-grid">
+            {/* Card 1 */}
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <IconChartBar size={24} />
+              </div>
+              <h3>Celestial Quiz Arenas</h3>
+              <p>
+                Challenge rivals across the stars in rapid-fire quiz duels with zero-latency question synchronization.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <IconCpu size={24} />
+              </div>
+              <h3>Fox Spirit Blessings</h3>
+              <p>
+                Unlock mystical power-ups and trivia blessings from the celestial fox spirits to double your score.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="feature-card">
+              <div className="feature-icon-wrapper">
+                <IconShieldLock size={24} />
+              </div>
+              <h3>High-Concurrency Engine</h3>
+              <p>
+                Powered by our reactive event loop cluster capable of hosting millions of concurrent trivia combatants.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* [04. FOOTER & MOCK UI SECTION] */}
+        <section className="dashboard-section">
+          <div
+            className="dashboard-tilt-container"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={tiltStyle}
           >
-            Simulation Sandbox
-          </button>
-          <button 
-            className={`btn-mode ${mode === 'live' ? 'active' : ''}`}
-            onClick={() => setMode('live')}
-          >
-            Live Server Connection
-          </button>
-        </div>
-
-        {/* Main Glassmorphism Panel */}
-        <div className="glass-card">
-          <svg className="card-wave-tr" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 0 8 Q 65 10 82 45 Q 95 70 92 100" stroke="#D4AF37" strokeWidth="0.75" fill="none" />
-            <path d="M 20 0 Q 75 10 88 35 Q 100 55 100 80" stroke="#D4AF37" strokeWidth="0.5" strokeDasharray="2 2" fill="none" />
-          </svg>
-          <svg className="card-wave-bl" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 100 92 Q 35 90 18 55 Q 5 30 8 0" stroke="#D4AF37" strokeWidth="0.75" fill="none" />
-            <path d="M 80 100 Q 25 90 12 65 Q 0 45 0 20" stroke="#D4AF37" strokeWidth="0.5" strokeDasharray="2 2" fill="none" />
-          </svg>
-
-          <div className="card-grid">
-            
-            {/* Left Column: Profile & Session Info */}
-            <div className="portal-side">
-              <h2 className="section-title">Portal Gateway</h2>
-
-              {isAuthenticated ? (
-                <>
-                  <div className="status-badge status-connected">
-                    <span className="status-dot"></span>
-                    <span>Portal Connected</span>
+            <div className="dashboard-frame">
+              <div className="dashboard-inner">
+                {/* Simulated Sidebar */}
+                <aside className="db-sidebar">
+                  <div>
+                    <div className="db-logo">
+                      <img src="/logo.png" alt="Astrail emblem" />
+                      <span>ASTRAIL ARENA</span>
+                    </div>
+                    <ul className="db-menu">
+                      <li className="active">
+                        <IconLayoutDashboard size={16} />
+                        <span>Overview</span>
+                      </li>
+                      <li>
+                        <IconTerminal2 size={16} />
+                        <span>Console Logs</span>
+                      </li>
+                      <li>
+                        <IconSettings size={16} />
+                        <span>Settings</span>
+                      </li>
+                    </ul>
                   </div>
 
-                  <div className="profile-card">
-                    <div className="profile-field">
-                      <div className="field-label">Celestial Subject</div>
-                      <div className="field-value">{username}</div>
+                  {/* Portal Status Section inside Sidebar */}
+                  <div className="db-portal-status">
+                    <div className="db-portal-header">Portal Gateway</div>
+                    <div className={`status-badge-mini ${isAuthenticated ? 'connected' : 'restricted'}`}>
+                      <span className="status-dot"></span>
+                      <span>{isAuthenticated ? 'Connected' : 'Locked'}</span>
                     </div>
-                    <div className="profile-field">
-                      <div className="field-label">Subject Signature (UUID)</div>
-                      <div className="field-value" style={{ fontFamily: 'monospace', fontSize: '12px' }}>{userId}</div>
+
+                    {isAuthenticated ? (
+                      <div className="db-profile-mini">
+                        <div>
+                          <div className="profile-label">Challenger</div>
+                          <div className="profile-val">{username}</div>
+                        </div>
+                        <div>
+                          <div className="profile-label">Signature (UUID)</div>
+                          <div className="profile-val">{userId}</div>
+                        </div>
+                        <div>
+                          <div className="profile-label">Arena Clearance</div>
+                          <div className="profile-val-role">{roles}</div>
+                        </div>
+                        {mode === 'mock' ? (
+                          <button
+                            className="btn-db-logout"
+                            onClick={() => {
+                              setMockState('guest');
+                              setConsoleLogs('Session terminated.\nSwitched mock status back to Restricted Guest.');
+                            }}
+                          >
+                            Disconnect
+                          </button>
+                        ) : (
+                          <a href={getLogoutUrl()} className="btn-db-logout">
+                            Disconnect
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="db-profile-mini">
+                        <p className="locked-desc">
+                          {mode === 'mock'
+                            ? 'Greetings, traveler. You are currently in the simulation lobby.'
+                            : 'Credentials required. Connect client to gateway authorization flow.'}
+                        </p>
+                        {mode === 'mock' ? (
+                          <button
+                            className="btn-db-login"
+                            onClick={() => {
+                              setMockState('user');
+                              setConsoleLogs('Authenticated simulated subject: user@astrail.com\nClearance: ROLE_USER');
+                            }}
+                          >
+                            Mock Login
+                          </button>
+                        ) : (
+                          <a href={getOAuth2AuthorizeUrl()} className="btn-db-login">
+                            Enter Portal
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </aside>
+
+                {/* Dashboard Main Workspace */}
+                <div className="db-main">
+                  <header className="db-header">
+                    <div className="db-title-group">
+                      <h2>System Telemetry Dashboard</h2>
+                      <p>
+                        Arena Rank Clearance: <span className="text-gold">{mockState.toUpperCase()}</span>
+                      </p>
                     </div>
-                    <div className="profile-field">
-                      <div className="field-label">Assigned Star Systems (Roles)</div>
+
+                    {/* Mode Switcher */}
+                    <div className="db-mode-switcher">
+                      <button
+                        className={`btn-db-mode ${mode === 'mock' ? 'active' : ''}`}
+                        onClick={() => setMode('mock')}
+                      >
+                        Sandbox
+                      </button>
+                      <button
+                        className={`btn-db-mode ${mode === 'live' ? 'active' : ''}`}
+                        onClick={() => setMode('live')}
+                      >
+                        Live Connection
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="db-content-grid">
+                    {/* Stat Card 1 */}
+                    <div className="db-card">
                       <div>
-                        <span className="field-value-role">{roles}</span>
+                        <div className="stat-label">
+                          <IconActivity size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                          <span>Active Battles</span>
+                        </div>
+                        <div className="stat-number">
+                          2,481 <span className="stat-unit">battles</span>
+                        </div>
+                      </div>
+                      <div className="stat-graph-container">
+                        <svg className="mini-chart" viewBox="0 0 100 30" fill="none">
+                          <path d="M 0 25 C 20 5, 40 28, 60 12 C 80 20, 90 2, 100 8" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
                       </div>
                     </div>
-                  </div>
 
-                  {mode === 'mock' ? (
-                    <>
-                      {/* Simulation Session Controls */}
-                      <div className="dev-controls">
-                        <div className="dev-controls-title">Role Clearance Control (Simulation)</div>
-                        <div className="sim-selectors">
-                          <button 
-                            className={`btn-sim ${mockState === 'user' ? 'active' : ''}`}
-                            onClick={() => handleTest('/api/test/revoke-admin', 'Simulating: Revoking Administrative clearance...')}
+                    {/* Stat Card 2 */}
+                    <div className="db-card">
+                      <div>
+                        <div className="stat-label">
+                          <IconUsers size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                          <span>Online Challengers</span>
+                        </div>
+                        <div className="stat-number">
+                          {isAuthenticated ? (mockState === 'admin' ? 842 : 124) : 0}{' '}
+                          <span className="stat-unit">nodes</span>
+                        </div>
+                      </div>
+                      <div className="stat-graph-container">
+                        <svg className="mini-chart" viewBox="0 0 100 30" fill="none">
+                          <path d="M 0 20 C 15 20, 30 10, 45 25 C 60 12, 85 28, 100 15" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Simulation Clearance Elevation Controls */}
+                    {mode === 'mock' && isAuthenticated && (
+                      <div className="db-card span-cols-2">
+                        <div className="stat-label">Arena Rank Clearance Controls (Sandbox)</div>
+                        <div className="sim-selectors-db">
+                          <button
+                            className={`btn-sim-db ${mockState === 'user' ? 'active' : ''}`}
+                            onClick={() =>
+                              handleTest('/api/test/revoke-admin', 'Simulating: Revoking Administrative clearance...')
+                            }
                           >
-                            Revoke ADMIN
+                            Revoke ADMIN Rank
                           </button>
-                          <button 
-                            className={`btn-sim ${mockState === 'admin' ? 'active' : ''}`}
-                            onClick={() => handleTest('/api/test/grant-admin', 'Simulating: Escalating clearance to ADMIN...')}
+                          <button
+                            className={`btn-sim-db ${mockState === 'admin' ? 'active' : ''}`}
+                            onClick={() =>
+                              handleTest('/api/test/grant-admin', 'Simulating: Escalating clearance to ADMIN...')
+                            }
                           >
-                            Elevate to ADMIN
+                            Elevate ADMIN Rank
                           </button>
                         </div>
                       </div>
+                    )}
 
-                      <button 
-                        className="btn-portal btn-portal-logout"
-                        onClick={() => {
-                          setMockState('guest');
-                          setConsoleLogs('Session terminated.\nSwitched mock status back to Restricted Guest.');
-                        }}
-                      >
-                        Sever Connection
-                      </button>
-                    </>
-                  ) : (
-                    <a 
-                      href="http://localhost:9000/logout" 
-                      className="btn-portal btn-portal-logout"
-                    >
-                      Sever Connection
-                    </a>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="status-badge status-restricted">
-                    <span className="status-dot"></span>
-                    <span>Portal Locked</span>
-                  </div>
-
-                  <div className="profile-card" style={{ borderColor: 'rgba(214, 175, 55, 0.15)' }}>
-                    <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'rgba(255, 255, 255, 0.7)' }}>
-                      {mode === 'mock' 
-                        ? 'Greetings, traveler. You are currently in the simulation lobby. Adjust the state above or query endpoints to explore responses.'
-                        : 'Credentials required. The outer React client is unauthenticated. Click below to redirect to the Astrail backend authorization flow.'
-                      }
-                    </p>
-                  </div>
-
-                  {mode === 'mock' ? (
-                    <div className="dev-controls">
-                      <div className="dev-controls-title">Authenticate Simulation Subject</div>
-                      <div className="sim-selectors">
-                        <button 
-                          className="btn-sim active" 
-                          onClick={() => {
-                            setMockState('user');
-                            setConsoleLogs('Authenticated simulated subject: user@astrail.com\nClearance: ROLE_USER');
-                          }}
-                          style={{ backgroundColor: 'rgba(74, 222, 128, 0.1)', borderColor: 'var(--success)' }}
+                    {/* Endpoint Gateway Action panel */}
+                    <div className="db-card span-cols-2">
+                      <div className="stat-label">Matchmaker Sectors</div>
+                      <div className="endpoint-buttons">
+                        <button
+                          className="btn-endpoint"
+                          onClick={() => handleTest('/api/test/public', 'Querying Public Orbit lobby [permitAll]...')}
                         >
-                          Login Mock User
+                          Public Lobby
+                        </button>
+                        <button
+                          className="btn-endpoint"
+                          onClick={() =>
+                            handleTest('/api/test/user', 'Querying Challenger Gate [hasRole(\'USER\')]...')
+                          }
+                        >
+                          Challenger Gate
+                        </button>
+                        <button
+                          className="btn-endpoint"
+                          onClick={() =>
+                            handleTest('/api/test/admin', 'Querying Fox Spirit Shrine [hasRole(\'ADMIN\')]...')
+                          }
+                        >
+                          Fox Spirit Shrine
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <a 
-                      href="http://localhost:9000/login" 
-                      className="btn-portal btn-portal-login"
-                    >
-                      Enter the Starry Sky
-                    </a>
-                  )}
-                </>
-              )}
-            </div>
 
-            {/* Right Column: Sandbox Console */}
-            <div className="sandbox-side">
-              <h2 className="section-title">Authorization Sandbox</h2>
-              <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '20px', lineHeight: '1.5' }}>
-                Query mock or live backend endpoints to test HTTP codes and responses under different access clearance checks.
-              </p>
-
-              <div className="sandbox-buttons">
-                <button 
-                  className="btn-test" 
-                  onClick={() => handleTest('/api/test/public', 'Querying Public Beacon [permitAll]...')}
-                >
-                  Public Orbit
-                </button>
-                <button 
-                  className="btn-test" 
-                  onClick={() => handleTest('/api/test/user', 'Querying User Sector [hasRole(\'USER\')]...')}
-                >
-                  User Station
-                </button>
-                <button 
-                  className="btn-test" 
-                  onClick={() => handleTest('/api/test/admin', 'Querying Admin Sector [hasRole(\'ADMIN\')]...')}
-                >
-                  Admin Sector
-                </button>
-              </div>
-
-              {/* Terminal View */}
-              <div className="terminal-console">
-                <div className="terminal-header">
-                  <div className="terminal-dots">
-                    <div className="terminal-dot dot-red"></div>
-                    <div className="terminal-dot dot-yellow"></div>
-                    <div className="terminal-dot dot-green"></div>
+                    {/* Console terminal window inside Dashboard */}
+                    <div className="db-card span-cols-2" style={{ padding: 0 }}>
+                      <div className="terminal-console-db">
+                        <div className="terminal-header-db">
+                          <div className="terminal-dots-db">
+                            <div className="dot dot-red"></div>
+                            <div className="dot dot-yellow"></div>
+                            <div className="dot dot-green"></div>
+                          </div>
+                          <div className="terminal-title-db">astrail-client-term.sh</div>
+                          <span className="terminal-badge-db">READY</span>
+                        </div>
+                        <div className="terminal-body-db" id="consoleOutput">
+                          {consoleLogs}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="terminal-title">astrail-client-term.sh</div>
-                  <div></div>
-                </div>
-                <div className="terminal-body" id="consoleOutput">
-                  {consoleLogs}
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+      </main>
 
+      {/* Footer link section */}
+      <footer className="footer-credits">
+        <div className="footer-container">
+          <div className="footer-col-info">
+            <div className="footer-logo-area">
+              <img src="/logo.png" className="footer-logo" alt="ASTRAIL Logo" />
+              <span className="footer-brand">ASTRAIL</span>
+            </div>
+            <p className="footer-tagline">
+              Multiplayer quiz battle platform guided by celestial star trails and fox spirits.
+            </p>
+            <div className="footer-copyright">
+              &copy; {new Date().getFullYear()} Astrail Systems Inc. All rights reserved.
+            </div>
+          </div>
+
+          <div className="footer-col">
+            <h4>Product</h4>
+            <ul className="footer-links">
+              <li><a href="#features">Features</a></li>
+              <li><a href="#architecture">Architecture</a></li>
+              <li><a href="#roadmap">Roadmap</a></li>
+              <li><a href="#changelog">Changelog</a></li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Resources</h4>
+            <ul className="footer-links">
+              <li><a href="#docs">Documentation</a></li>
+              <li><a href="#api">API Reference</a></li>
+              <li><a href="#community">Community</a></li>
+              <li><a href="#status">Status</a></li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Company</h4>
+            <ul className="footer-links">
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#careers">Careers</a></li>
+              <li><a href="#privacy">Privacy Policy</a></li>
+              <li><a href="#terms">Terms of Service</a></li>
+            </ul>
           </div>
         </div>
-      </div>
-    </>
+      </footer>
+    </div>
   )
 }
 

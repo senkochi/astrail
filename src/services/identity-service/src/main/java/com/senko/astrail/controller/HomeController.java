@@ -1,16 +1,23 @@
 package com.senko.astrail.controller;
 
-import com.senko.astrail.config.CustomUserDetails;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Controller
 public class HomeController {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public HomeController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @GetMapping("/")
     public String index(Model model) {
@@ -22,7 +29,8 @@ public class HomeController {
         model.addAttribute("isAuthenticated", isAuthenticated);
 
         if (isAuthenticated) {
-            model.addAttribute("username", auth.getName());
+            String username = auth.getName();
+            model.addAttribute("username", username);
 
             // Extract roles as a comma-separated string for display
             String rolesStr = auth.getAuthorities().stream()
@@ -30,14 +38,17 @@ public class HomeController {
                     .collect(Collectors.joining(", "));
             model.addAttribute("roles", rolesStr);
 
-            // Extract custom fields if principal is CustomUserDetails
-            if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
-                model.addAttribute("userId", userDetails.getId());
-            } else {
-                model.addAttribute("userId", "N/A (Non-custom Principal)");
+            try {
+                UUID userId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM users WHERE username = ?", UUID.class, username);
+                model.addAttribute("userId", userId != null ? userId : "N/A");
+            } catch (Exception e) {
+                model.addAttribute("userId", "N/A");
             }
         }
 
         return "index";
     }
 }
+
+

@@ -1,9 +1,9 @@
 package com.senko.astrail.service;
 
-import com.senko.astrail.config.CustomUserDetails;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,7 +16,7 @@ import java.util.*;
 @Primary
 public class CustomUserDetailService implements UserDetailsService {
 
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     public CustomUserDetailService(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
@@ -34,9 +34,6 @@ public class CustomUserDetailService implements UserDetailsService {
 
         try {
             return Objects.requireNonNull(jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-                Object idObj = rs.getObject("id");
-                UUID userId = (idObj instanceof UUID) ? (UUID) idObj : UUID.fromString(idObj.toString());
-
                 String authsString = rs.getString("authorities");
                 List<SimpleGrantedAuthority> authorities = Collections.emptyList();
 
@@ -46,11 +43,10 @@ public class CustomUserDetailService implements UserDetailsService {
                             .toList();
                 }
 
-                return CustomUserDetails.builder()
-                        .id(userId)
+                return User.builder()
                         .username(rs.getString("username"))
                         .password(rs.getString("password"))
-                        .enabled(rs.getBoolean("enabled"))
+                        .disabled(!rs.getBoolean("enabled"))
                         .authorities(authorities)
                         .build();
             }, username));
@@ -60,4 +56,5 @@ public class CustomUserDetailService implements UserDetailsService {
         }
     }
 }
+
 
