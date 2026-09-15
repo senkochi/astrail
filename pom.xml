@@ -12,5 +12,7 @@
 
 	<modules>
 		<module>src/services/identity-service</module>
+		<module>src/services/api-gateway</module>
+		<module>src/services/user-service</module>
 	</modules>
 </project>
