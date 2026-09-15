@@ -85,18 +85,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(endpointsMatcher)
                 )
-                .with(authorizationServerConfigurer, (authServer) ->
-                        authServer.clientAuthentication(clientAuth ->
-                                clientAuth.errorResponseHandler((request, response, exception) -> {
-                                    // Log lỗi ra console để debug chính xác tại sao fail
-                                    System.out.println("Client Auth Error: " + exception.getMessage());
-                                })
+                .with(authorizationServerConfigurer, (authServer) -> {
+                    authServer
+                        .clientAuthentication(clientAuth ->
+                            clientAuth.errorResponseHandler((request, response, exception) -> {
+                                System.out.println("Client Auth Error: " + exception.getMessage());
+                            })
                         )
-                )
-                .apply(authorizationServerConfigurer); // Áp dụng cấu hình
+                        .oidc(Customizer.withDefaults());
+                });
 
-        authorizationServerConfigurer
-                .oidc(Customizer.withDefaults()); // Bật OpenID Connect
 
         http
                 .exceptionHandling(exceptions -> exceptions
